@@ -1,0 +1,29 @@
+This installations works for MacOS with Apple Chip
+1. brew install openjdk@11.0.2
+2. HADOOP_VERSION=3.3.6
+curl -O https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz
+tar -xzf hadoop-$HADOOP_VERSION.tar.gz
+sudo mv hadoop-$HADOOP_VERSION /opt/hadoop
+rm hadoop-$HADOOP_VERSION.tar.gz
+echo '
+export HADOOP_HOME=/opt/hadoop
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+export JAVA_HOME=$(/usr/libexec/java_home -v11)
+' >> ~/.zprofile
+source ~/.zprofile
+3. java --version
+4. brew install scala
+5. SPARK_VERSION=3.5.1
+curl -O https://downloads.apache.org/spark/spark-$SPARK_VERSION/spark-$SPARK_VERSION-bin-hadoop3.tgz
+tar -xzf spark-$SPARK_VERSION-bin-hadoop3.tgz
+sudo mv spark-$SPARK_VERSION-bin-hadoop3 /opt/spark
+rm spark-$SPARK_VERSION-bin-hadoop3.tgz
+echo '
+export SPARK_HOME=/opt/spark
+export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+' >> ~/.zprofile
+source ~/.zprofile
+6. brew install spark-shell
+7. brew install python@3.9
+8. brew install unixodbc
+9. brew link hadoop
