@@ -11,6 +11,6 @@ Day 2:
 Day 3:
 Data Analysis on all data:
  - Feature Extraction
- - EDA
+ - EDA (Data Cleaning, Descriptive Statistics, Correlation Analysis, Feature Engineering)
  - statistical significance
  - hypothesis
