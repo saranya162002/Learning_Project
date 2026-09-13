@@ -1,9 +1,9 @@
-import pyspark.sql.functions as F
-import pyspark.sql.types as T
-import pyspark.sql.functions as F
-import pyspark.sql.types as T
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
+import pyspark.sql.functions as F
+import pyspark.sql.types as T
+
+
 def initialise_spark():
     conf = {
         "setMaster":"local[*]",
