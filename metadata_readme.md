@@ -1,238 +1,51 @@
-# E-Commerce Metadata Platform
+# Technology Stack
 
-## Overview
+## Ingestion
 
-This pipeline manages all catalog and inventory-related data for the e-commerce platform.
+- Airbyte
+- Apache Kafka
 
-The objective is to build a near real-time product catalog system capable of:
+## Processing
 
-* Product catalog management
-* Inventory management
-* Pricing management
-* Search catalog generation
-* AI-powered semantic product discovery
+- Apache Spark
+- PySpark
 
----
+## Lakehouse
 
-## Data Sources
+- Delta Lake
+- MinIO
 
-### Batch Sources
+## Transformations
 
-* products.csv
-* categories.csv
-* brands.csv
-* sellers.csv
+- dbt Core
 
-### CDC Sources
+## Orchestration
 
-PostgreSQL Tables:
-
-* products
-* inventory
-* pricing
-* sellers
-* warehouses
-
-### Streaming Sources
-
-Inventory Events
-
-Examples:
-
-* inventory_added
-* inventory_removed
-* inventory_adjustment
-* stock_replenishment
-
----
-
-## Architecture
-
-```text
-Batch Files
-    │
-    ▼
- Airbyte
-    │
-
-PostgreSQL
-    │
-Debezium CDC
-    │
-
-Inventory Events
-    │
-Kafka Producer
-    │
-
-    ┌──────────────┐
-    │    Kafka     │
-    └──────┬───────┘
-           │
-           ▼
-
-Spark Structured Streaming
-
-           │
-           ▼
-
-────────────────────────────
-DELTA LAKE
-────────────────────────────
-
-Bronze
-├── products_raw
-├── inventory_raw
-├── pricing_raw
-└── sellers_raw
-
-Silver
-├── products
-├── inventory
-├── pricing
-└── sellers
-
-Gold
-├── product_catalog
-├── inventory_health
-├── pricing_analytics
-└── search_catalog
-
-           │
-           ▼
-
-Serving Layer
-
-├── ClickHouse
-├── OpenSearch
-└── Qdrant
-```
-
----
-
-## Bronze Layer
-
-Raw immutable source data.
-
-Tables:
-
-* bronze.products_raw
-* bronze.inventory_raw
-* bronze.pricing_raw
-* bronze.sellers_raw
-
----
-
-## Silver Layer
-
-Cleaned and conformed data.
-
-Tables:
-
-* silver.products
-* silver.inventory
-* silver.pricing
-* silver.sellers
-
-Transformations:
-
-* schema standardization
-* deduplication
-* CDC merge logic
-* null handling
-
----
-
-## Gold Layer
-
-Business-ready datasets.
-
-### product_catalog
-
-Unified product catalog.
-
-### inventory_health
-
-Inventory KPIs:
-
-* stock coverage
-* low stock products
-* out-of-stock products
-
-### pricing_analytics
-
-Pricing trends.
-
-### search_catalog
-
-Served to OpenSearch.
-
----
-
-## OLTP
-
-PostgreSQL
-
-Tables:
-
-* products
-* inventory
-* pricing
-* sellers
-
----
+- Apache Airflow
 
 ## OLAP
 
-ClickHouse
-
-Tables:
-
-* product_catalog
-* inventory_metrics
-* pricing_metrics
-
----
+- ClickHouse
 
 ## Search
 
-OpenSearch
+- OpenSearch
 
-Indexes:
+## AI
 
-* products
-* categories
-* brands
+- Qdrant
+- Sentence Transformers
 
----
+## Agent Framework
 
-## AI Components
+- LangGraph
 
-Qdrant
+## MCP Servers
 
-Embeddings:
-
-* product title
-* description
-* category
-* brand
-
-Use Cases:
-
-* semantic search
-* recommendations
-* product discovery
-
----
-
-## MCP Tools
-
-* PostgreSQL MCP
-* Kafka MCP
-* Delta MCP
-* dbt MCP
-* ClickHouse MCP
-* OpenSearch MCP
-* Qdrant MCP
-* Airflow MCP
-* OpenMetadata MCP
+- Kafka MCP
+- Delta Lake MCP
+- ClickHouse MCP
+- OpenSearch MCP
+- Qdrant MCP
+- Airflow MCP
+- dbt MCP
