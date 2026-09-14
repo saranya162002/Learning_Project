@@ -198,3 +198,13 @@ kubernetes/
     ├── stop_platform.sh
     ├── reset_environment.sh
     └── generate_sample_data.py
+
+
+ubuntu:22.04
+        │
+        ▼
+ecommerce-base:1.0
+        │
+ ┌──────┼─────────┬─────────┬─────────┐
+ ▼      ▼         ▼         ▼         ▼
+Spark Airflow    dbt       API       MCP

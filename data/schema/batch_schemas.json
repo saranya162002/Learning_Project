@@ -1,0 +1,101 @@
+{
+  "products": {
+    "primary_key": "product_id",
+    "columns": [
+      {"name": "product_id", "type": "string", "nullable": false},
+      {"name": "sku_id", "type": "string", "nullable": false},
+      {"name": "product_name", "type": "string", "nullable": false},
+      {"name": "brand_id", "type": "string", "nullable": false},
+      {"name": "category_id", "type": "string", "nullable": false},
+      {"name": "description", "type": "string", "nullable": true},
+      {"name": "launch_date", "type": "date", "nullable": true},
+      {"name": "status", "type": "string", "nullable": false}
+    ]
+  },
+
+  "categories": {
+    "primary_key": "category_id",
+    "columns": [
+      {"name": "category_id", "type": "string", "nullable": false},
+      {"name": "category_name", "type": "string", "nullable": false},
+      {"name": "parent_category_id", "type": "string", "nullable": true}
+    ]
+  },
+
+  "brands": {
+    "primary_key": "brand_id",
+    "columns": [
+      {"name": "brand_id", "type": "string", "nullable": false},
+      {"name": "brand_name", "type": "string", "nullable": false},
+      {"name": "country", "type": "string", "nullable": true}
+    ]
+  },
+
+  "sellers": {
+    "primary_key": "seller_id",
+    "columns": [
+      {"name": "seller_id", "type": "string", "nullable": false},
+      {"name": "seller_name", "type": "string", "nullable": false},
+      {"name": "seller_type", "type": "string", "nullable": false},
+      {"name": "city", "type": "string", "nullable": true},
+      {"name": "state", "type": "string", "nullable": true},
+      {"name": "rating", "type": "decimal", "nullable": true}
+    ]
+  },
+
+  "warehouses": {
+    "primary_key": "warehouse_id",
+    "columns": [
+      {"name": "warehouse_id", "type": "string", "nullable": false},
+      {"name": "warehouse_name", "type": "string", "nullable": false},
+      {"name": "city", "type": "string", "nullable": false},
+      {"name": "state", "type": "string", "nullable": false},
+      {"name": "capacity", "type": "integer", "nullable": false}
+    ]
+  },
+
+  "suppliers": {
+    "primary_key": "supplier_id",
+    "columns": [
+      {"name": "supplier_id", "type": "string", "nullable": false},
+      {"name": "supplier_name", "type": "string", "nullable": false},
+      {"name": "country", "type": "string", "nullable": true},
+      {"name": "lead_time_days", "type": "integer", "nullable": false}
+    ]
+  },
+
+  "pricing": {
+    "primary_key": "price_id",
+    "columns": [
+      {"name": "price_id", "type": "string", "nullable": false},
+      {"name": "sku_id", "type": "string", "nullable": false},
+      {"name": "mrp", "type": "decimal", "nullable": false},
+      {"name": "selling_price", "type": "decimal", "nullable": false},
+      {"name": "discount_pct", "type": "decimal", "nullable": true},
+      {"name": "effective_date", "type": "date", "nullable": false}
+    ]
+  },
+
+  "product_attributes": {
+    "primary_key": "attribute_id",
+    "columns": [
+      {"name": "attribute_id", "type": "string", "nullable": false},
+      {"name": "sku_id", "type": "string", "nullable": false},
+      {"name": "color", "type": "string", "nullable": true},
+      {"name": "size", "type": "string", "nullable": true},
+      {"name": "material", "type": "string", "nullable": true},
+      {"name": "gender", "type": "string", "nullable": true},
+      {"name": "season", "type": "string", "nullable": true}
+    ]
+  },
+
+  "product_images": {
+    "primary_key": "image_id",
+    "columns": [
+      {"name": "image_id", "type": "string", "nullable": false},
+      {"name": "sku_id", "type": "string", "nullable": false},
+      {"name": "image_url", "type": "string", "nullable": false},
+      {"name": "image_type", "type": "string", "nullable": false}
+    ]
+  }
+}

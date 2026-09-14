@@ -1,0 +1,157 @@
+FROM ubuntu:22.04
+
+ARG USER_ID=1001
+ARG GROUP_ID=1001
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --------------------------------------------------
+# Locale / Timezone
+# --------------------------------------------------
+
+ENV TZ=UTC
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# --------------------------------------------------
+# Java
+# --------------------------------------------------
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# --------------------------------------------------
+# Python
+# --------------------------------------------------
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONIOENCODING=UTF-8
+
+# --------------------------------------------------
+# Generic Platform Directories
+# --------------------------------------------------
+
+ENV PLATFORM_HOME=/opt/platform
+ENV PLATFORM_DATA=/opt/platform/data
+ENV PLATFORM_LOGS=/opt/platform/logs
+ENV PLATFORM_JARS=/opt/platform/jars
+
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+# --------------------------------------------------
+# OS Packages
+# --------------------------------------------------
+
+RUN apt-get update && apt-get install -y \
+    openjdk-17-jdk \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    build-essential \
+    gcc \
+    g++ \
+    make \
+    curl \
+    wget \
+    unzip \
+    zip \
+    tar \
+    gzip \
+    git \
+    vim \
+    nano \
+    jq \
+    tree \
+    procps \
+    net-tools \
+    iputils-ping \
+    dnsutils \
+    telnet \
+    netcat-openbsd \
+    lsof \
+    rsync \
+    ca-certificates \
+    gnupg \
+    software-properties-common \
+    locales \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------
+# Generate Locale
+# --------------------------------------------------
+
+RUN locale-gen en_US.UTF-8
+
+# --------------------------------------------------
+# Upgrade pip
+# --------------------------------------------------
+
+RUN python3 -m pip install --upgrade \
+    pip \
+    setuptools \
+    wheel
+
+# --------------------------------------------------
+# Common Python Packages
+# Used across Spark, Airflow, dbt, API
+# --------------------------------------------------
+
+RUN pip3 install --no-cache-dir \
+    pandas \
+    numpy \
+    pyarrow \
+    faker \
+    boto3 \
+    requests \
+    pyyaml \
+    python-dotenv
+
+# --------------------------------------------------
+# Create Platform Directories
+# --------------------------------------------------
+
+RUN mkdir -p \
+    ${PLATFORM_HOME} \
+    ${PLATFORM_DATA} \
+    ${PLATFORM_LOGS} \
+    ${PLATFORM_JARS} \
+    /workspace
+
+# --------------------------------------------------
+# Create Non Root User
+# Similar to Bitnami (UID 1001)
+# --------------------------------------------------
+
+RUN groupadd -g ${GROUP_ID} platform && \
+    useradd \
+      --uid ${USER_ID} \
+      --gid ${GROUP_ID} \
+      --create-home \
+      --shell /bin/bash \
+      platform
+
+# --------------------------------------------------
+# Permissions
+# --------------------------------------------------
+
+RUN chown -R platform:platform \
+    ${PLATFORM_HOME} \
+    /workspace \
+    /home/platform
+
+# --------------------------------------------------
+# Working Directory
+# --------------------------------------------------
+
+WORKDIR /workspace
+
+USER platform
+
+# --------------------------------------------------
+# Container Default
+# --------------------------------------------------
+
+CMD ["/bin/bash"]

@@ -1,0 +1,24 @@
+FROM ecommerce-base:1.0
+
+USER root
+
+ENV SPARK_VERSION=3.5.1
+
+RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    mv spark-${SPARK_VERSION}-bin-hadoop3 /opt/spark && \
+    rm spark-${SPARK_VERSION}.tgz
+
+ENV SPARK_HOME=/opt/spark
+
+ENV PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
+
+RUN pip3 install --no-cache-dir \
+    pyspark==3.5.1 \
+    delta-spark==3.2.0 \
+    kafka-python \
+    confluent-kafka
+
+USER platform
+
+WORKDIR /workspace

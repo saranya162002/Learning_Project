@@ -1,0 +1,47 @@
+{
+  "inventory_updates": {
+    "topic": "inventory_updates",
+    "key_column": "sku_id",
+    "columns": [
+      {"name": "event_id", "type": "string"},
+      {"name": "sku_id", "type": "string"},
+      {"name": "warehouse_id", "type": "string"},
+      {"name": "quantity", "type": "integer"},
+      {"name": "event_time", "type": "timestamp"}
+    ]
+  },
+
+  "price_updates": {
+    "topic": "price_updates",
+    "key_column": "sku_id",
+    "columns": [
+      {"name": "event_id", "type": "string"},
+      {"name": "sku_id", "type": "string"},
+      {"name": "new_price", "type": "decimal"},
+      {"name": "event_time", "type": "timestamp"}
+    ]
+  },
+
+  "product_status_updates": {
+    "topic": "product_status_updates",
+    "key_column": "sku_id",
+    "columns": [
+      {"name": "event_id", "type": "string"},
+      {"name": "sku_id", "type": "string"},
+      {"name": "status", "type": "string"},
+      {"name": "event_time", "type": "timestamp"}
+    ]
+  },
+
+  "seller_updates": {
+    "topic": "seller_updates",
+    "key_column": "seller_id",
+    "columns": [
+      {"name": "event_id", "type": "string"},
+      {"name": "seller_id", "type": "string"},
+      {"name": "rating", "type": "decimal"},
+      {"name": "status", "type": "string"},
+      {"name": "event_time", "type": "timestamp"}
+    ]
+  }
+}
