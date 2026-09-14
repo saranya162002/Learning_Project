@@ -5,34 +5,125 @@ ecommerce-data-platform/
 ├── README-EVENTS.md
 ├── INSTALLATION.md
 ├── ARCHITECTURE.md
+├── CONTRIBUTING.md
 │
 ├── docker-compose.yml
 ├── requirements.txt
 ├── .env.example
+├── .gitignore
+│
+├── docs/
+│   ├── architecture/
+│   │   ├── metadata-pipeline.drawio
+│   │   ├── events-pipeline.drawio
+│   │   └── ai-platform.drawio
+│   │
+│   ├── images/
+│   │   ├── metadata-architecture.png
+│   │   ├── events-architecture.png
+│   │   └── overall-platform.png
+│   │
+│   └── decisions/
+│       ├── why-delta-lake.md
+│       ├── why-clickhouse.md
+│       ├── why-opensearch.md
+│       └── future-iceberg-roadmap.md
+│
+├── docker/
+│   │
+│   ├── spark/
+│   │   └── Dockerfile
+│   │
+│   ├── airflow/
+│   │   └── Dockerfile
+│   │
+│   ├── mcp/
+│   │   └── Dockerfile
+│   │
+│   ├── api/
+│   │   └── Dockerfile
+│   │
+│   └── dbt/
+│       └── Dockerfile
+│
+├── cicd/
+│   │
+│   ├── github-actions/
+│   │   ├── build.yml
+│   │   ├── test.yml
+│   │   └── release.yml
+│   │
+│   └── registry/
+│       └── image-versioning.md
+│
+kubernetes/
+│
+├── kafka/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── pvc.yaml
+│
+├── spark/
+│   ├── spark-job.yaml
+│   └── spark-configmap.yaml
+│
+├── airflow/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+├── clickhouse/
+│   ├── deployment.yaml
+│   └── pvc.yaml
+│
+├── opensearch/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+├── qdrant/
+│   ├── deployment.yaml
+│   └── pvc.yaml
+│
+├── minio/
+│   ├── deployment.yaml
+│   └── pvc.yaml
+│
+├── api/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+├── mcp/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+└── namespaces/    
+│    └── ecommerce-platform.yaml
+├──monitoring/
+│   ├── grafana/
+│   ├── prometheus/
+│    ├── loki/
+│    └── dashboards/
+│
+│
+│
 │
 ├── data/
-│   ├── products.csv
-│   ├── categories.csv
-│   ├── brands.csv
-│   ├── sellers.csv
-│   └── inventory_events.json
-│
-├── infrastructure/
-│   ├── kafka/
-│   ├── minio/
-│   ├── clickhouse/
-│   ├── opensearch/
-│   ├── qdrant/
-│   └── airflow/
+│   │
+│   ├── metadata/
+│   │   ├── products.csv
+│   │   ├── categories.csv
+│   │   ├── brands.csv
+│   │   └── sellers.csv
+│   │
+│   └── events/
+│       ├── inventory_events.json
+│       ├── click_events.json
+│       ├── search_events.json
+│       └── purchase_events.json
 │
 ├── pipelines/
 │   │
 │   ├── metadata/
-│   │   │
 │   │   ├── ingestion/
-│   │   │   ├── airbyte_loader.py
-│   │   │   └── inventory_stream.py
-│   │   │
 │   │   ├── bronze/
 │   │   ├── silver/
 │   │   ├── gold/
@@ -46,37 +137,64 @@ ecommerce-data-platform/
 │       └── serving/
 │
 ├── lakehouse/
+│   │
 │   ├── bronze/
 │   ├── silver/
 │   ├── gold/
 │   └── checkpoints/
 │
 ├── dbt/
+│   │
 │   ├── models/
 │   │   ├── metadata/
 │   │   └── events/
 │   │
 │   ├── tests/
 │   ├── macros/
+│   ├── seeds/
 │   └── dbt_project.yml
 │
 ├── analytics/
-│   └── clickhouse/
+│   │
+│   ├── clickhouse/
+│   └── dashboards/
 │
 ├── search/
+│   │
 │   ├── opensearch/
 │   └── qdrant/
 │
 ├── ai/
+│   │
 │   ├── rag/
 │   ├── agents/
+│   ├── embeddings/
 │   └── prompts/
 │
 ├── mcp/
-│   ├── clickhouse_server.py
+│   │
 │   ├── kafka_server.py
-│   ├── qdrant_server.py
+│   ├── clickhouse_server.py
 │   ├── opensearch_server.py
-│   └── delta_server.py
+│   ├── qdrant_server.py
+│   ├── delta_server.py
+│   ├── dbt_server.py
+│   └── airflow_server.py
 │
-└── tests/
+├── api/
+│   │
+│   ├── app.py
+│   ├── routers/
+│   └── services/
+│
+├── tests/
+│   ├── metadata/
+│   ├── events/
+│   ├── dbt/
+│   └── integration/
+│
+└── scripts/
+    ├── start_platform.sh
+    ├── stop_platform.sh
+    ├── reset_environment.sh
+    └── generate_sample_data.py

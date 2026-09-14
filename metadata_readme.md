@@ -9,6 +9,7 @@
 
 - Apache Spark
 - PySpark
+- Spark Structured Streaming
 
 ## Lakehouse
 
@@ -23,27 +24,48 @@
 
 - Apache Airflow
 
-## OLAP
+## OLAP Analytics
 
 - ClickHouse
 
-## Search
+## Search Platform
 
 - OpenSearch
 
-## AI
+## Vector Search
 
 - Qdrant
+
+## AI Components
+
 - Sentence Transformers
-
-## Agent Framework
-
 - LangGraph
 
-## MCP Servers
+## API Layer
+
+- FastAPI
+
+## Containerization
+
+- Docker
+- Docker Compose
+
+## Container Registry
+
+- GitHub Container Registry (GHCR)
+
+## Orchestration Platform
+
+- Kubernetes
+
+## Cluster Operations
+
+- K9s
+
+## MCP Integration
 
 - Kafka MCP
-- Delta Lake MCP
+- Delta MCP
 - ClickHouse MCP
 - OpenSearch MCP
 - Qdrant MCP
