@@ -145,7 +145,8 @@ product_names = [
     "Headphones",
     "Jacket",
     "Watch",
-    "Backpack"
+    "Backpack",
+    "Saree"
 ]
 
 products = []
@@ -163,11 +164,13 @@ colors = [
 ]
 
 sizes = [
+    "XS",
     "S",
     "M",
     "L",
     "XL",
-    "XXL"
+    "XXL",
+    "XXXL"
 ]
 
 materials = [

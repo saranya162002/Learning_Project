@@ -1,0 +1,11 @@
+FROM ecommerce-base:1.0
+
+USER root
+
+RUN pip3 install --no-cache-dir \
+    dbt-core \
+    dbt-duckdb
+
+USER platform
+
+WORKDIR /workspace

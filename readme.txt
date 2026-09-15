@@ -208,3 +208,73 @@ ecommerce-base:1.0
  ┌──────┼─────────┬─────────┬─────────┐
  ▼      ▼         ▼         ▼         ▼
 Spark Airflow    dbt       API       MCP
+
+
+Technology:
+Why it exists:
+What problem it solves:
+What data it owns:
+What it receives:
+What it outputs:
+Why another component isn't sufficient:
+
+
+Kafka
+ ↓
+Spark
+ ↓
+Delta Silver
+ ↓
+dbt
+ ↓
+Delta/ClickHouse Gold
+
+
+                         DATA SOURCES
+                              │
+              ┌───────────────┴───────────────┐
+              │                               │
+         Batch Data                       Events
+              │                               │
+              ▼                               ▼
+         Object Store                      Kafka
+              │                               │
+              └───────────────┬───────────────┘
+                              ▼
+                         INGESTION
+                              │
+                              ▼
+                     DELTA BRONZE
+                              │
+                              ▼
+                    SPARK PROCESSING
+                              │
+                              ▼
+                     DELTA SILVER
+                              │
+                    ┌─────────┴─────────┐
+                    │                   │
+                    ▼                   ▼
+                  dbt              ML/Embeddings
+                    │                   │
+                    ▼                   ▼
+               DELTA GOLD             Qdrant
+                    │
+             ┌──────┴──────┐
+             ▼             ▼
+        ClickHouse      OpenSearch
+             │             │
+             └──────┬──────┘
+                    ▼
+                 FastAPI
+                    │
+          ┌─────────┴─────────┐
+          ▼                   ▼
+       Frontend              MCP
+
+       ┌─────────────────────────────────┐
+       │         CONTROL PLANE           │
+       │                                 │
+       │ Metadata | Quality | Lineage    │
+       │ Airflow  | Monitoring | Catalog │
+       └─────────────────────────────────┘
