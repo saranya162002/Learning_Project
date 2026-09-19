@@ -1,4 +1,4 @@
-FROM ecommerce-base:1.0
+FROM ecommerce-platform-base:latest
 
 USER root
 
@@ -7,7 +7,7 @@ ENV SPARK_VERSION=3.5.1
 RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
     tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
     mv spark-${SPARK_VERSION}-bin-hadoop3 /opt/spark && \
-    rm spark-${SPARK_VERSION}.tgz
+    rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
 
 ENV SPARK_HOME=/opt/spark
 

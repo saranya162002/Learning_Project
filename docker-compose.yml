@@ -1,0 +1,18 @@
+services:
+
+  platform-base:
+
+    image: ecommerce-platform-base:latest
+
+    container_name: platform-base
+
+    hostname: platform-base
+
+    volumes:
+      - ./workspace:/workspace
+
+    environment:
+      TZ: UTC
+
+    tty: true
+    stdin_open: true

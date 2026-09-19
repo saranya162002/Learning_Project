@@ -1,4 +1,4 @@
-FROM ecommerce-base:1.0
+FROM ecommerce-platform-base:latest
 
 USER root
 

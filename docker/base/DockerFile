@@ -48,7 +48,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
-    python3-dev \
+    # python3-dev \
     build-essential \
     gcc \
     g++ \
@@ -69,12 +69,12 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     dnsutils \
     telnet \
-    netcat-openbsd \
+    # netcat-openbsd \
     lsof \
-    rsync \
+    # rsync \
     ca-certificates \
     gnupg \
-    software-properties-common \
+    # software-properties-common \
     locales \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
@@ -83,7 +83,7 @@ RUN apt-get update && apt-get install -y \
 # Generate Locale
 # --------------------------------------------------
 
-RUN locale-gen en_US.UTF-8
+# RUN locale-gen en_US.UTF-8
 
 # --------------------------------------------------
 # Upgrade pip
@@ -99,15 +99,10 @@ RUN python3 -m pip install --upgrade \
 # Used across Spark, Airflow, dbt, API
 # --------------------------------------------------
 
-RUN pip3 install --no-cache-dir \
-    pandas \
-    numpy \
-    pyarrow \
-    faker \
-    boto3 \
+RUN pip install --no-cache-dir \
     requests \
-    pyyaml \
-    python-dotenv
+    pyyaml
+    # python-dotenv
 
 # --------------------------------------------------
 # Create Platform Directories
