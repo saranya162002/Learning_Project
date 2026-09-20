@@ -20,12 +20,12 @@ on:
     branches: [main]
     paths:
       - 'docker/**'
-      - '.github/workflows/build-and-push.yml'
+      - '.github/workflows/build-and-push.yaml'
   pull_request:
     branches: [main]
     paths:
       - 'docker/**'
-      - '.github/workflows/build-and-push.yml'
+      - '.github/workflows/build-and-push.yaml'
   workflow_dispatch:           # Allow manual trigger
 
 env:
