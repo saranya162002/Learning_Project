@@ -1,0 +1,104 @@
+###############################################################################
+# Grafana Loki Deployment, Service, and PVC
+###############################################################################
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-pvc
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: log-store
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: log-store
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3100
+      targetPort: 3100
+      name: http-metrics
+  selector:
+    app.kubernetes.io/name: loki
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: log-store
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loki
+        app.kubernetes.io/component: log-store
+        app.kubernetes.io/part-of: ecommerce-data-platform
+    spec:
+      containers:
+        - name: loki
+          image: grafana/loki:2.9.2
+          args:
+            - "-config.file=/etc/loki/loki.yaml"
+          ports:
+            - containerPort: 3100
+              name: http-metrics
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/loki
+            - name: storage-volume
+              mountPath: /var/loki
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 3100
+            initialDelaySeconds: 30
+            periodSeconds: 15
+
+      volumes:
+        - name: config-volume
+          configMap:
+            name: loki-config
+        - name: storage-volume
+          persistentVolumeClaim:
+            claimName: loki-pvc
+

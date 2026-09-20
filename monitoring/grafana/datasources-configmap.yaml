@@ -1,0 +1,36 @@
+###############################################################################
+# Grafana Datasources ConfigMap
+#
+# Pre-configures datasources for Grafana:
+#   1. Prometheus → http://prometheus.monitoring.svc.cluster.local:9090
+#   2. Loki       → http://loki.monitoring.svc.cluster.local:3100
+###############################################################################
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: visualization
+    app.kubernetes.io/part-of: ecommerce-data-platform
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc.cluster.local:9090
+        isDefault: true
+        jsonData:
+          timeInterval: 15s
+
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
+        jsonData:
+          maxLines: 1000
+

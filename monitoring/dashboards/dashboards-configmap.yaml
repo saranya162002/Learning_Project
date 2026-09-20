@@ -1,0 +1,164 @@
+###############################################################################
+# Grafana Dashboards JSON ConfigMap
+# Mounts pre-built dashboards directly into Grafana
+###############################################################################
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-json
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: visualization
+    app.kubernetes.io/part-of: ecommerce-data-platform
+data:
+  k8s-cluster-cpu-memory.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "title": "CPU Utilization by Pod",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "editorMode": "code",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[5m])) by (pod)",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "title": "Memory Usage by Pod",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "editorMode": "code",
+              "expr": "sum(container_memory_working_set_bytes{container!=\"\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "title": "Pod Network I/O (Received/Transmitted)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "expr": "sum(rate(container_network_receive_bytes_total[5m])) by (pod)",
+              "legendFormat": "Rx: {{pod}}"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "expr": "sum(rate(container_network_transmit_bytes_total[5m])) by (pod)",
+              "legendFormat": "Tx: {{pod}}"
+            }
+          ]
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["kubernetes", "cpu", "memory"],
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Kubernetes Pod & Node Metrics"
+    }
+
+  loki-pod-job-logs.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "graphTooltip": 0,
+      "id": null,
+      "panels": [
+        {
+          "title": "Real-Time Container & Job Logs (Loki)",
+          "type": "logs",
+          "gridPos": { "h": 16, "w": 24, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "Loki" },
+              "editorMode": "code",
+              "expr": "{namespace=~\"ecommerce-platform|monitoring\"}",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none"
+          }
+        }
+      ],
+      "refresh": "5s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["loki", "logs", "jobs", "deployments"],
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Pod & Job Log Streams"
+    }
+
+  platform-services-health.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "id": null,
+      "panels": [
+        {
+          "title": "Active Pod Count by Component",
+          "type": "stat",
+          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "expr": "count(kube_pod_info{namespace=\"ecommerce-platform\"})",
+              "legendFormat": "Total Pods"
+            }
+          ]
+        },
+        {
+          "title": "Kafka Broker Pod Status",
+          "type": "stat",
+          "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "expr": "count(kube_pod_status_phase{phase=\"Running\", pod=~\"kafka.*\"})",
+              "legendFormat": "Kafka Running Pods"
+            }
+          ]
+        },
+        {
+          "title": "Airflow Worker / Pod Status",
+          "type": "stat",
+          "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "Prometheus" },
+              "expr": "count(kube_pod_status_phase{phase=\"Running\", pod=~\"airflow.*\"})",
+              "legendFormat": "Airflow Running Pods"
+            }
+          ]
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["platform", "kafka", "spark", "airflow"],
+      "title": "Platform Services Health"
+    }
+
