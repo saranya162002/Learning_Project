@@ -1,0 +1,74 @@
+###############################################################################
+# Kafka ConfigMap
+#
+# Central configuration for 2 Kafka brokers backed by ZooKeeper
+#
+# Topics served (from architecture):
+#   Batch connectors  → products, categories, brands, sellers  (4 topics)
+#   Stream connectors → inventory_updates, price_updates       (2 topics)
+#   Additional        → seller_updates, product_status_updates,
+#                        suppliers, warehouses, pricing
+###############################################################################
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: broker
+    app.kubernetes.io/part-of: ecommerce-data-platform
+data:
+  # ── Server properties template ──
+  server.properties: |
+    # ─── ZooKeeper Connection ──────────────────────────────────────
+    zookeeper.connect=zookeeper.ecommerce-platform.svc.cluster.local:2181
+    zookeeper.connection.timeout.ms=18000
+
+    # ─── Listeners ────────────────────────────────────────────────
+    listeners=PLAINTEXT://:9092
+    inter.broker.listener.name=PLAINTEXT
+    listener.security.protocol.map=PLAINTEXT:PLAINTEXT
+
+    # ─── Log / Data ───────────────────────────────────────────────
+    log.dirs=/var/lib/kafka/data
+    num.partitions=2
+    default.replication.factor=2
+    min.insync.replicas=1
+    log.retention.hours=168
+    log.segment.bytes=1073741824
+    log.retention.check.interval.ms=300000
+
+    # ─── Performance ──────────────────────────────────────────────
+    num.network.threads=3
+    num.io.threads=8
+    socket.send.buffer.bytes=102400
+    socket.receive.buffer.bytes=102400
+    socket.request.max.bytes=104857600
+
+    # ─── Topic Auto-Creation ──────────────────────────────────────
+    auto.create.topics.enable=false
+    delete.topic.enable=true
+
+    # ─── Offsets & Transactions ───────────────────────────────────
+    offsets.topic.replication.factor=2
+    transaction.state.log.replication.factor=2
+    transaction.state.log.min.isr=1
+
+  # ── Init script: sets broker.id + advertised.listeners per pod ──
+  init-kafka.sh: |
+    #!/bin/bash
+    set -e
+
+    # Extract ordinal index from hostname (kafka-0 → 0, kafka-1 → 1)
+    ORDINAL=${HOSTNAME##*-}
+
+    # Copy template and inject per-broker values
+    cp /etc/kafka/config/server.properties /tmp/server.properties
+
+    echo "" >> /tmp/server.properties
+    echo "broker.id=${ORDINAL}" >> /tmp/server.properties
+    echo "advertised.listeners=PLAINTEXT://${HOSTNAME}.kafka-headless.ecommerce-platform.svc.cluster.local:9092" >> /tmp/server.properties
+
+    # Start Kafka
+    exec kafka-server-start.sh /tmp/server.properties

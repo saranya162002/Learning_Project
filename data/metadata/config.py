@@ -1,6 +1,6 @@
 from pathlib import Path
 
-BASE_DIR = Path("output")
+BASE_DIR = Path("data/metadata/raw_data")
 
 BATCH_DIR = BASE_DIR / "batch"
 STREAM_DIR = BASE_DIR / "stream"

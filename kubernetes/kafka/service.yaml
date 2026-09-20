@@ -1,0 +1,66 @@
+###############################################################################
+# Kafka Services
+#
+# Two services:
+#   1. kafka-headless  → StatefulSet DNS (kafka-0.kafka-headless...)
+#                        Used for inter-broker communication & KRaft quorum
+#   2. kafka           → ClusterIP service for client applications
+#                        Spark jobs, Airflow, connectors connect here
+###############################################################################
+
+# ─── Headless Service (StatefulSet requirement) ────────────────────────────
+# Provides stable DNS for each broker pod:
+#   kafka-0.kafka-headless.ecommerce-platform.svc.cluster.local
+#   kafka-1.kafka-headless.ecommerce-platform.svc.cluster.local
+#   kafka-2.kafka-headless.ecommerce-platform.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: broker
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: ClusterIP
+  clusterIP: None               # Headless — no load balancing, direct pod DNS
+  publishNotReadyAddresses: true # Required for StatefulSet initial bootstrap
+  ports:
+    - name: client
+      port: 9092
+      targetPort: 9092
+      protocol: TCP
+    - name: controller
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: broker
+
+---
+
+# ─── Client Service (for Spark, Airflow, Connectors) ──────────────────────
+# Applications connect to: kafka.ecommerce-platform.svc.cluster.local:9092
+# This load-balances across all healthy brokers.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: broker
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - name: client
+      port: 9092
+      targetPort: 9092
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: broker
+

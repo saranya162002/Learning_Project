@@ -1,0 +1,11 @@
+###############################################################################
+# Kafka Namespace
+# Isolates all Kafka resources within the ecommerce-platform namespace
+###############################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecommerce-platform
+  labels:
+    app.kubernetes.io/part-of: ecommerce-data-platform
+

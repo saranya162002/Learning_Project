@@ -1,0 +1,26 @@
+###############################################################################
+# Kafka Persistent Volume Claims
+#
+# Note: The 2-broker StatefulSet automatically provisions per-broker PVCs
+# (named kafka-data-kafka-0 and kafka-data-kafka-1) using volumeClaimTemplates.
+# Each broker gets 5Gi of persistent storage.
+#
+# ZooKeeper also manages its own PVCs (zookeeper-data-zookeeper-0, 5Gi).
+#
+# This standalone PVC file is provided for reference or single-broker dev setups.
+###############################################################################
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-data-standalone
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: broker
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

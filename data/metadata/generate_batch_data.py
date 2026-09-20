@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from faker import Faker
 
-from data.metadata.config import *
+from config import *
 
 fake = Faker()
 

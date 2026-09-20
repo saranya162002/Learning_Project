@@ -1,0 +1,106 @@
+###############################################################################
+# Kafka Topic Initialization Job
+#
+# One-time Job that creates all platform Kafka topics after the 2-broker
+# Kafka + ZooKeeper cluster is healthy.
+#
+# Configurations:
+#   - Replication factor: 2 (matching 2 brokers)
+#   - Partitions: Even numbers (2 partitions for batch, 4 or 6 for high throughput streams)
+#
+# Topics:
+#   Batch connector topics (4):
+#     - ecommerce.batch.products               (partitions: 2, replication: 2)
+#     - ecommerce.batch.categories             (partitions: 2, replication: 2)
+#     - ecommerce.batch.brands                 (partitions: 2, replication: 2)
+#     - ecommerce.batch.sellers                (partitions: 2, replication: 2)
+#
+#   Additional batch topics:
+#     - ecommerce.batch.suppliers              (partitions: 2, replication: 2)
+#     - ecommerce.batch.warehouses             (partitions: 2, replication: 2)
+#     - ecommerce.batch.pricing                (partitions: 2, replication: 2)
+#
+#   Stream connector topics (4):
+#     - ecommerce.stream.inventory-updates     (partitions: 6, replication: 2)
+#     - ecommerce.stream.price-updates         (partitions: 6, replication: 2)
+#     - ecommerce.stream.seller-updates        (partitions: 4, replication: 2)
+#     - ecommerce.stream.product-status-updates(partitions: 4, replication: 2)
+###############################################################################
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topic-init
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: topic-init
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka
+        app.kubernetes.io/component: topic-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: topic-creator
+          image: apache/kafka:3.7.0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              BOOTSTRAP="kafka-headless.ecommerce-platform.svc.cluster.local:9092"
+
+              echo "=== Waiting for Kafka cluster to be ready ==="
+              until kafka-broker-api-versions.sh --bootstrap-server $BOOTSTRAP > /dev/null 2>&1; do
+                echo "  Kafka not ready yet, retrying in 5s..."
+                sleep 5
+              done
+              echo "=== Kafka cluster is ready ==="
+
+              # ── Function to create a topic idempotently with even partition counts ──
+              create_topic() {
+                local TOPIC=$1
+                local PARTITIONS=$2
+                local REPLICATION=${3:-2}
+
+                echo "Creating topic: ${TOPIC} (partitions=${PARTITIONS}, replication=${REPLICATION})"
+                kafka-topics.sh \
+                  --bootstrap-server $BOOTSTRAP \
+                  --create \
+                  --if-not-exists \
+                  --topic "$TOPIC" \
+                  --partitions "$PARTITIONS" \
+                  --replication-factor "$REPLICATION" \
+                  --config retention.ms=604800000 \
+                  --config cleanup.policy=delete
+              }
+
+              echo ""
+              echo "=== Creating Batch Connector Topics (Even partitions = 2) ==="
+              create_topic "ecommerce.batch.products"       2 2
+              create_topic "ecommerce.batch.categories"     2 2
+              create_topic "ecommerce.batch.brands"         2 2
+              create_topic "ecommerce.batch.sellers"        2 2
+
+              echo ""
+              echo "=== Creating Additional Batch Topics (Even partitions = 2) ==="
+              create_topic "ecommerce.batch.suppliers"      2 2
+              create_topic "ecommerce.batch.warehouses"     2 2
+              create_topic "ecommerce.batch.pricing"        2 2
+
+              echo ""
+              echo "=== Creating Stream Connector Topics (Even partitions = 4 or 6) ==="
+              create_topic "ecommerce.stream.inventory-updates"       6 2
+              create_topic "ecommerce.stream.price-updates"           6 2
+              create_topic "ecommerce.stream.seller-updates"          4 2
+              create_topic "ecommerce.stream.product-status-updates"  4 2
+
+              echo ""
+              echo "=== All topics created successfully ==="
+              kafka-topics.sh --bootstrap-server $BOOTSTRAP --list
