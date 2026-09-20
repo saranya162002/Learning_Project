@@ -1,0 +1,56 @@
+###############################################################################
+# SparkApplication — Silver Layer Transformation
+#
+# Reads raw Bronze Delta tables, performs data cleansing, deduplication,
+# schema normalization, SCD Type 2 pricing history, and builds Product 360.
+#
+# Triggered by Airflow DAG after Bronze Ingestion completes.
+###############################################################################
+
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-silver-transformation
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: spark
+    app.kubernetes.io/component: silver-transformation
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///workspace/pipelines/metadata/silver/silver_transformation_job.py
+  sparkVersion: "3.5.1"
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "512m"
+    labels:
+      version: 3.5.1
+      role: driver
+    serviceAccount: spark
+    envFrom:
+      - configMapRef:
+          name: spark-config
+
+  executor:
+    cores: 1
+    instances: 2
+    memory: "512m"
+    labels:
+      version: 3.5.1
+      role: executor
+    envFrom:
+      - configMapRef:
+          name: spark-config
+

@@ -1,0 +1,46 @@
+###############################################################################
+# Spark ConfigMap — Global Configuration defaults
+#
+# Configures:
+#   - Delta Lake Catalog & Extensions
+#   - Kafka Integration Settings
+#   - Kubernetes Master & Executor Defaults
+#   - Event Logging & UI Settings
+###############################################################################
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: spark
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: ecommerce-data-platform
+data:
+  spark-defaults.conf: |
+    # ─── Delta Lake Extensions & Catalog ──────────────────────────────
+    spark.sql.extensions                   io.delta.sql.DeltaSparkSessionExtension
+    spark.sql.catalog.spark_catalog        org.apache.spark.sql.delta.catalog.DeltaCatalog
+
+    # ─── Kubernetes Driver & Executor Settings ───────────────────────
+    spark.master                           k8s://https://kubernetes.default.svc
+    spark.kubernetes.container.image       ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
+    spark.kubernetes.container.image.pullPolicy IfNotPresent
+    spark.kubernetes.namespace             ecommerce-platform
+    spark.kubernetes.authenticate.driver.serviceAccountName spark
+
+    # ─── Data Platform Endpoints ─────────────────────────────────────
+    spark.kafka.bootstrap.servers          kafka.ecommerce-platform.svc.cluster.local:9092
+    spark.hadoop.fs.s3a.endpoint           http://minio.ecommerce-platform.svc.cluster.local:9000
+    spark.hadoop.fs.s3a.access.key         minioadmin
+    spark.hadoop.fs.s3a.secret.key         minioadmin
+    spark.hadoop.fs.s3a.path.style.access  true
+    spark.hadoop.fs.s3a.impl               org.apache.hadoop.fs.s3a.S3AFileSystem
+
+    # ─── Performance & Shuffle Settings ──────────────────────────────
+    spark.sql.shuffle.partitions           4
+    spark.default.parallelism              4
+    spark.sql.adaptive.enabled             true
+    spark.serializer                       org.apache.spark.serializer.KryoSerializer
+
