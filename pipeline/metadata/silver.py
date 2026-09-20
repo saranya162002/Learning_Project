@@ -1,3 +1,6 @@
+import logging
+import sys
+import time
 from pathlib import Path
 
 from delta import configure_spark_with_delta_pip
@@ -13,6 +16,15 @@ from pyspark.sql.types import (
     TimestampType,
 )
 
+# -----------------------------------------------------------------------------
+# Structured Logging Setup for Loki & Promtail Monitoring
+# -----------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [SILVER_PIPELINE] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger("SilverTransformation")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BRONZE_DIR = PROJECT_ROOT / "data" / "metadata" / "bronze"
@@ -65,6 +77,7 @@ STREAM_SCHEMAS = {
 
 
 def create_spark_session(app_name="metadata-silver"):
+    logger.info(f"Initializing Spark Session for Silver layer (app_name='{app_name}')...")
     builder = (
         SparkSession.builder.appName(app_name)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -73,8 +86,9 @@ def create_spark_session(app_name="metadata-silver"):
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
     )
-
-    return configure_spark_with_delta_pip(builder).getOrCreate()
+    spark = configure_spark_with_delta_pip(builder).getOrCreate()
+    logger.info("Spark Session created. Version: %s", spark.version)
+    return spark
 
 
 def bronze_path(entity):
@@ -88,6 +102,7 @@ def table_exists(path):
 def read_bronze_file_table(spark, entity):
     path = bronze_path(entity)
     if not table_exists(path):
+        logger.error(f"Missing required Bronze table: {path}")
         raise FileNotFoundError(f"Missing Bronze table: {path}")
 
     df = spark.read.format("delta").load(str(path))
@@ -97,6 +112,7 @@ def read_bronze_file_table(spark, entity):
 def read_optional_bronze_file_table(spark, entity):
     path = bronze_path(entity)
     if not table_exists(path):
+        logger.info(f"Optional Bronze table not found: {path}. Skipping.")
         return None
 
     return read_bronze_file_table(spark, entity)
@@ -105,6 +121,7 @@ def read_optional_bronze_file_table(spark, entity):
 def read_bronze_stream_table(spark, entity):
     path = bronze_path(entity)
     if not table_exists(path):
+        logger.error(f"Missing required streaming Bronze table: {path}")
         raise FileNotFoundError(f"Missing Bronze table: {path}")
 
     schema = STREAM_SCHEMAS[entity]
@@ -130,7 +147,6 @@ def with_columns(df, defaults):
     for column_name, value in defaults.items():
         if column_name not in df.columns:
             df = df.withColumn(column_name, value)
-
     return df
 
 
@@ -146,15 +162,24 @@ def latest_by(df, keys, order_columns):
 
 
 def write_silver(df, table_name):
+    start_time = time.time()
+    target_path = TABLES[table_name]
+    logger.info(f"Writing Silver table '{table_name}' to path: {target_path}...")
+
+    count = df.count()
     (
         df.write.format("delta")
         .option("overwriteSchema", "true")
         .mode("overwrite")
-        .save(str(TABLES[table_name]))
+        .save(str(target_path))
     )
+
+    elapsed = round(time.time() - start_time, 2)
+    logger.info(f"SUCCESS: Saved silver.{table_name} | Records={count} | Duration={elapsed}s | Path={target_path}")
 
 
 def build_product_master(spark):
+    logger.info("Building Silver entity: product_master...")
     products = latest_by(
         read_bronze_file_table(spark, "products"),
         ["sku_id"],
@@ -253,6 +278,7 @@ def build_product_master(spark):
 
 
 def build_inventory_current(spark):
+    logger.info("Building Silver entity: inventory_current...")
     inventory = read_bronze_stream_table(spark, "inventory_updates")
     warehouses = latest_by(
         read_bronze_file_table(spark, "warehouses"),
@@ -315,6 +341,7 @@ def stream_pricing_events(spark):
 
 
 def build_pricing_history(spark):
+    logger.info("Building Silver entity: pricing_history (SCD Type 2)...")
     pricing_events = batch_pricing_events(spark)
     price_updates = stream_pricing_events(spark)
 
@@ -346,6 +373,7 @@ def build_pricing_history(spark):
 
 
 def build_seller_current(spark):
+    logger.info("Building Silver entity: seller_current...")
     sellers = latest_by(
         read_bronze_file_table(spark, "sellers"),
         ["seller_id"],
@@ -419,6 +447,7 @@ def seller_metrics_by_sku(spark, seller_current):
 
 
 def build_product_360(spark, product_master, inventory_current, pricing_history, seller_current):
+    logger.info("Building Silver unified Product 360 dataset...")
     current_price = pricing_history.filter(F.col("is_current")).select(
         "sku_id",
         F.col("price").alias("current_price"),
@@ -437,33 +466,44 @@ def build_product_360(spark, product_master, inventory_current, pricing_history,
 
 
 def run_silver():
+    logger.info("==================================================")
+    logger.info("STARTING SILVER LAYER TRANSFORMATION PIPELINE")
+    logger.info("==================================================")
+    
     SILVER_DIR.mkdir(parents=True, exist_ok=True)
 
     spark = create_spark_session()
 
-    product_master = build_product_master(spark)
-    inventory_current = build_inventory_current(spark)
-    pricing_history = build_pricing_history(spark)
-    seller_current = build_seller_current(spark)
-    product_360 = build_product_360(
-        spark,
-        product_master,
-        inventory_current,
-        pricing_history,
-        seller_current,
-    )
+    try:
+        product_master = build_product_master(spark)
+        inventory_current = build_inventory_current(spark)
+        pricing_history = build_pricing_history(spark)
+        seller_current = build_seller_current(spark)
+        product_360 = build_product_360(
+            spark,
+            product_master,
+            inventory_current,
+            pricing_history,
+            seller_current,
+        )
 
-    outputs = {
-        "product_master": product_master,
-        "inventory_current": inventory_current,
-        "pricing_history": pricing_history,
-        "seller_current": seller_current,
-        "product_360": product_360,
-    }
+        outputs = {
+            "product_master": product_master,
+            "inventory_current": inventory_current,
+            "pricing_history": pricing_history,
+            "seller_current": seller_current,
+            "product_360": product_360,
+        }
 
-    for table_name, df in outputs.items():
-        write_silver(df, table_name)
-        print(f"Wrote silver.{table_name} to {TABLES[table_name]}")
+        for table_name, df in outputs.items():
+            write_silver(df, table_name)
+
+        logger.info("==================================================")
+        logger.info("SILVER LAYER PIPELINE COMPLETED SUCCESSFULLY")
+        logger.info("==================================================")
+    except Exception as e:
+        logger.error(f"SILVER PIPELINE FAILED: {str(e)}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":

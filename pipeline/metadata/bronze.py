@@ -1,3 +1,6 @@
+import logging
+import sys
+import time
 from pathlib import Path
 
 from delta import configure_spark_with_delta_pip
@@ -5,17 +8,24 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
+# -----------------------------------------------------------------------------
+# Structured Logging Setup for Loki & Promtail Monitoring
+# -----------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [BRONZE_PIPELINE] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger("BronzeIngestion")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "metadata" / "raw_data"
 BRONZE_DIR = PROJECT_ROOT / "data" / "metadata" / "bronze"
 CHECKPOINT_DIR = BRONZE_DIR / "_checkpoints"
 
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_BOOTSTRAP_SERVERS = "kafka.ecommerce-platform.svc.cluster.local:9092"
 CORRUPT_RECORD_COLUMN = "_corrupt_record"
 
-# Add a new file source or Kafka topic here.
-# File sources default to data/metadata/raw_data/<entity>/.
 CONFIG = {
     "products": {"source_type": "file", "file_format": "csv"},
     "categories": {"source_type": "file", "file_format": "csv"},
@@ -24,17 +34,18 @@ CONFIG = {
     "suppliers": {"source_type": "file", "file_format": "csv"},
     "warehouses": {"source_type": "file", "file_format": "csv"},
     "pricing": {"source_type": "file", "file_format": "csv"},
-    "inventory_updates": {"source_type": "kafka", "topic": "inventory_updates"},
-    "price_updates": {"source_type": "kafka", "topic": "price_updates"},
-    "seller_updates": {"source_type": "kafka", "topic": "seller_updates"},
+    "inventory_updates": {"source_type": "kafka", "topic": "ecommerce.stream.inventory-updates"},
+    "price_updates": {"source_type": "kafka", "topic": "ecommerce.stream.price-updates"},
+    "seller_updates": {"source_type": "kafka", "topic": "ecommerce.stream.seller-updates"},
     "product_status_updates": {
         "source_type": "kafka",
-        "topic": "product_status_updates",
+        "topic": "ecommerce.stream.product-status-updates",
     },
 }
 
 
 def create_spark_session(app_name="metadata-bronze"):
+    logger.info(f"Initializing Spark Session for Bronze layer (app_name='{app_name}')...")
     builder = (
         SparkSession.builder.appName(app_name)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -43,8 +54,9 @@ def create_spark_session(app_name="metadata-bronze"):
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
     )
-
-    return configure_spark_with_delta_pip(builder).getOrCreate()
+    spark = configure_spark_with_delta_pip(builder).getOrCreate()
+    logger.info("Spark Session created successfully. Spark Version: %s", spark.version)
+    return spark
 
 
 def source_path(entity, config):
@@ -67,15 +79,17 @@ def list_source_files(path, file_format):
         return [str(path)]
 
     if not path.exists():
-        raise FileNotFoundError(f"Source path does not exist: {path}")
+        logger.warning(f"Source path does not exist: {path}")
+        return []
 
-    return [str(file) for file in sorted(path.rglob(f"*.{extension}")) if file.is_file()]
+    files = [str(file) for file in sorted(path.rglob(f"*.{extension}")) if file.is_file()]
+    logger.info(f"Discovered {len(files)} {file_format} file(s) in path: {path}")
+    return files
 
 
 def schema_with_corrupt_record(schema):
     if CORRUPT_RECORD_COLUMN in schema.fieldNames():
         return schema
-
     return schema.add(T.StructField(CORRUPT_RECORD_COLUMN, T.StringType(), True))
 
 
@@ -107,25 +121,18 @@ def read_excel_files(spark, files):
             .load(files)
         )
     except Exception as exc:
-        raise RuntimeError(
-            "Unable to read Excel files with Spark. Install the Spark Excel datasource "
-            "(for example, com.crealytics:spark-excel_2.12:<version>) and verify "
-            "that the workbook is not corrupt."
-        ) from exc
+        logger.error(f"Failed to read Excel files: {exc}")
+        raise RuntimeError("Unable to read Excel files with Spark datasource.") from exc
 
 
 def read_source_files(spark, files, file_format):
     file_format = file_format.lower().lstrip(".")
-
     if file_format == "json":
         return read_json_files(spark, files)
-
     if file_format == "csv":
         return read_csv_files(spark, files)
-
     if file_format == "xlsx":
         return read_excel_files(spark, files)
-
     raise ValueError(f"Unsupported file format: {file_format}")
 
 
@@ -181,23 +188,32 @@ def write_delta(df, path):
 
 
 def load_file_to_bronze(spark, entity, config):
+    start_time = time.time()
     file_format = config["file_format"].lower().lstrip(".")
-    files = list_source_files(source_path(entity, config), file_format)
+    logger.info(f"Processing batch entity '{entity}' (format={file_format})...")
 
+    files = list_source_files(source_path(entity, config), file_format)
     if not files:
-        print(f"No {file_format} files found for {entity}")
+        logger.warning(f"No {file_format} files found for entity '{entity}'. Skipping.")
         return
 
     df = read_source_files(spark, files, file_format)
     bronze_df = add_file_bronze_columns(df, entity)
-    write_delta(bronze_df, bronze_path(entity))
+    
+    count = bronze_df.count()
+    target_path = bronze_path(entity)
+    write_delta(bronze_df, target_path)
 
-    print(f"Appended {entity} raw data to {bronze_path(entity)}")
+    elapsed = round(time.time() - start_time, 2)
+    logger.info(
+        f"SUCCESS: Loaded entity='{entity}' | Records={count} | Duration={elapsed}s | Path={target_path}"
+    )
 
 
 def load_kafka_to_bronze(spark, entity, config):
     topic = config["topic"]
     broker = config.get("broker", KAFKA_BOOTSTRAP_SERVERS)
+    logger.info(f"Starting Kafka stream ingestion for entity='{entity}' from topic='{topic}' @ {broker}...")
 
     kafka_df = (
         spark.readStream.format("kafka")
@@ -207,34 +223,44 @@ def load_kafka_to_bronze(spark, entity, config):
         .load()
     )
 
+    target_path = bronze_path(entity)
+    cp_path = checkpoint_path(entity)
+
     query = (
         add_kafka_bronze_columns(kafka_df, entity)
         .writeStream.format("delta")
         .outputMode("append")
         .option("mergeSchema", "true")
-        .option("checkpointLocation", str(checkpoint_path(entity)))
+        .option("checkpointLocation", str(cp_path))
         .partitionBy("ingestion_date")
-        .start(str(bronze_path(entity)))
+        .start(str(target_path))
     )
 
-    print(f"Started stream {entity} from topic {topic} to {bronze_path(entity)}")
+    logger.info(f"Kafka stream for '{entity}' started successfully (Query ID: {query.id}, Target: {target_path})")
     return query
 
 
 def load_entity_to_bronze(spark, entity, config):
     source_type = config["source_type"].lower()
+    try:
+        if source_type == "file":
+            load_file_to_bronze(spark, entity, config)
+            return None
 
-    if source_type == "file":
-        load_file_to_bronze(spark, entity, config)
-        return None
+        if source_type == "kafka":
+            return load_kafka_to_bronze(spark, entity, config)
 
-    if source_type == "kafka":
-        return load_kafka_to_bronze(spark, entity, config)
-
-    raise ValueError(f"Unsupported source_type for {entity}: {source_type}")
+        raise ValueError(f"Unsupported source_type for {entity}: {source_type}")
+    except Exception as e:
+        logger.error(f"FAILED to process entity '{entity}': {str(e)}", exc_info=True)
+        raise
 
 
 def run_bronze(config=CONFIG):
+    logger.info("==================================================")
+    logger.info("STARTING BRONZE LAYER INGESTION PIPELINE")
+    logger.info("==================================================")
+    
     BRONZE_DIR.mkdir(parents=True, exist_ok=True)
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -246,11 +272,11 @@ def run_bronze(config=CONFIG):
         if query is not None:
             queries.append(query)
 
+    logger.info(f"Bronze ingestion dispatch complete. Active streaming queries: {len(queries)}")
     return queries
 
 
 if __name__ == "__main__":
     stream_queries = run_bronze()
-
     for stream_query in stream_queries:
         stream_query.awaitTermination()

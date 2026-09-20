@@ -4,6 +4,8 @@
 # Transforms Silver domain entities into Star Schema Dimensions & Facts
 # (dim_product, dim_brand, dim_seller, dim_warehouse, fact_inventory, etc.)
 # and feeds OLAP search/serving engines (ClickHouse, OpenSearch, Qdrant).
+#
+# Configured with Promtail & Prometheus annotations for logging & metrics.
 ###############################################################################
 
 apiVersion: sparkoperator.k8s.io/v1beta2
@@ -21,7 +23,7 @@ spec:
   mode: cluster
   image: ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
   imagePullPolicy: IfNotPresent
-  mainApplicationFile: local:///workspace/pipelines/metadata/gold/gold_aggregation_job.py
+  mainApplicationFile: local:///workspace/pipeline/metadata/gold.py
   sparkVersion: "3.5.1"
   restartPolicy:
     type: OnFailure
@@ -37,6 +39,11 @@ spec:
     labels:
       version: 3.5.1
       role: driver
+      app: spark-gold-aggregation
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "4040"
+      promtail.io/scrape: "true"
     serviceAccount: spark
     envFrom:
       - configMapRef:
@@ -49,7 +56,11 @@ spec:
     labels:
       version: 3.5.1
       role: executor
+      app: spark-gold-aggregation
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "4040"
+      promtail.io/scrape: "true"
     envFrom:
       - configMapRef:
           name: spark-config
-

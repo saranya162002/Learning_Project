@@ -4,7 +4,7 @@
 # Reads raw data from Kafka topics & batch files, processes with Spark,
 # and writes partitioned Delta Lake tables into the Bronze Lakehouse.
 #
-# Triggered directly via `kubectl apply` or Airflow SparkKubernetesOperator
+# Configured with Promtail & Prometheus annotations for logging & metrics.
 ###############################################################################
 
 apiVersion: sparkoperator.k8s.io/v1beta2
@@ -22,7 +22,7 @@ spec:
   mode: cluster
   image: ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
   imagePullPolicy: IfNotPresent
-  mainApplicationFile: local:///workspace/pipelines/metadata/bronze/bronze_ingestion_job.py
+  mainApplicationFile: local:///workspace/pipeline/metadata/bronze.py
   sparkVersion: "3.5.1"
   restartPolicy:
     type: OnFailure
@@ -38,6 +38,11 @@ spec:
     labels:
       version: 3.5.1
       role: driver
+      app: spark-bronze-ingestion
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "4040"
+      promtail.io/scrape: "true"
     serviceAccount: spark
     envFrom:
       - configMapRef:
@@ -50,7 +55,11 @@ spec:
     labels:
       version: 3.5.1
       role: executor
+      app: spark-bronze-ingestion
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "4040"
+      promtail.io/scrape: "true"
     envFrom:
       - configMapRef:
           name: spark-config
-

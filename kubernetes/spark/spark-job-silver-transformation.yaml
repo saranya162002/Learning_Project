@@ -4,7 +4,7 @@
 # Reads raw Bronze Delta tables, performs data cleansing, deduplication,
 # schema normalization, SCD Type 2 pricing history, and builds Product 360.
 #
-# Triggered by Airflow DAG after Bronze Ingestion completes.
+# Configured with Promtail & Prometheus annotations for logging & metrics.
 ###############################################################################
 
 apiVersion: sparkoperator.k8s.io/v1beta2
@@ -22,7 +22,7 @@ spec:
   mode: cluster
   image: ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
   imagePullPolicy: IfNotPresent
-  mainApplicationFile: local:///workspace/pipelines/metadata/silver/silver_transformation_job.py
+  mainApplicationFile: local:///workspace/pipeline/metadata/silver.py
   sparkVersion: "3.5.1"
   restartPolicy:
     type: OnFailure
@@ -38,6 +38,11 @@ spec:
     labels:
       version: 3.5.1
       role: driver
+      app: spark-silver-transformation
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "4040"
+      promtail.io/scrape: "true"
     serviceAccount: spark
     envFrom:
       - configMapRef:
@@ -50,7 +55,11 @@ spec:
     labels:
       version: 3.5.1
       role: executor
+      app: spark-silver-transformation
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "4040"
+      promtail.io/scrape: "true"
     envFrom:
       - configMapRef:
           name: spark-config
-

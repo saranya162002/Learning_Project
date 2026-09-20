@@ -1,3 +1,6 @@
+import logging
+import sys
+import time
 from pathlib import Path
 
 from delta import configure_spark_with_delta_pip
@@ -6,6 +9,15 @@ from pyspark.sql import Window
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
+# -----------------------------------------------------------------------------
+# Structured Logging Setup for Loki & Promtail Monitoring
+# -----------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [GOLD_PIPELINE] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger("GoldAggregation")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SILVER_DIR = PROJECT_ROOT / "data" / "metadata" / "silver"
@@ -22,6 +34,7 @@ REQUIRED_SILVER_TABLES = {
 
 
 def create_spark_session(app_name="metadata-gold"):
+    logger.info(f"Initializing Spark Session for Gold layer (app_name='{app_name}')...")
     builder = (
         SparkSession.builder.appName(app_name)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -30,8 +43,9 @@ def create_spark_session(app_name="metadata-gold"):
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
     )
-
-    return configure_spark_with_delta_pip(builder).getOrCreate()
+    spark = configure_spark_with_delta_pip(builder).getOrCreate()
+    logger.info("Spark Session created. Version: %s", spark.version)
+    return spark
 
 
 def table_exists(path):
@@ -41,6 +55,7 @@ def table_exists(path):
 def read_silver_table(spark, table_name):
     path = REQUIRED_SILVER_TABLES[table_name]
     if not table_exists(path):
+        logger.error(f"Missing required Silver table: {path}")
         raise FileNotFoundError(f"Missing Silver table: {path}")
 
     return spark.read.format("delta").load(str(path))
@@ -50,11 +65,11 @@ def ensure_columns(df, columns):
     for column_name, data_type in columns.items():
         if column_name not in df.columns:
             df = df.withColumn(column_name, F.lit(None).cast(data_type))
-
     return df
 
 
 def build_inventory_metrics(inventory_current):
+    logger.info("Building Gold inventory aggregations...")
     inventory_current = ensure_columns(
         inventory_current,
         {
@@ -87,6 +102,7 @@ def build_inventory_metrics(inventory_current):
 
 
 def build_pricing_metrics(pricing_history):
+    logger.info("Building Gold pricing aggregations...")
     pricing_history = ensure_columns(
         pricing_history,
         {
@@ -126,6 +142,7 @@ def build_pricing_metrics(pricing_history):
 
 
 def build_gold_product_snapshot(spark):
+    logger.info("Reading Silver tables for Gold product_business_snapshot...")
     product_360 = read_silver_table(spark, "product_360")
     inventory_current = read_silver_table(spark, "inventory_current")
     pricing_history = read_silver_table(spark, "pricing_history")
@@ -231,6 +248,10 @@ def build_gold_product_snapshot(spark):
 
 
 def write_gold(df):
+    start_time = time.time()
+    logger.info(f"Writing Gold table to path: {GOLD_TABLE}...")
+
+    count = df.count()
     (
         df.write.format("delta")
         .option("overwriteSchema", "true")
@@ -239,15 +260,28 @@ def write_gold(df):
         .save(str(GOLD_TABLE))
     )
 
+    elapsed = round(time.time() - start_time, 2)
+    logger.info(f"SUCCESS: Saved gold.product_business_snapshot | Records={count} | Duration={elapsed}s | Path={GOLD_TABLE}")
+
 
 def run_gold():
+    logger.info("==================================================")
+    logger.info("STARTING GOLD LAYER AGGREGATION PIPELINE")
+    logger.info("==================================================")
+
     GOLD_DIR.mkdir(parents=True, exist_ok=True)
 
     spark = create_spark_session()
-    gold_df = build_gold_product_snapshot(spark)
-    write_gold(gold_df)
+    try:
+        gold_df = build_gold_product_snapshot(spark)
+        write_gold(gold_df)
 
-    print(f"Wrote gold.product_business_snapshot to {GOLD_TABLE}")
+        logger.info("==================================================")
+        logger.info("GOLD LAYER PIPELINE COMPLETED SUCCESSFULLY")
+        logger.info("==================================================")
+    except Exception as e:
+        logger.error(f"GOLD PIPELINE FAILED: {str(e)}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":
