@@ -3,11 +3,32 @@ FROM ${BASE_IMAGE}
 
 USER root
 
+# --------------------------------------------------
+# Airflow Environment Variables
+# --------------------------------------------------
+ENV AIRFLOW_HOME=/opt/airflow
+ENV PATH="${AIRFLOW_HOME}/.local/bin:${PATH}"
+
+RUN mkdir -p ${AIRFLOW_HOME}/dags ${AIRFLOW_HOME}/logs ${AIRFLOW_HOME}/plugins
+
+# --------------------------------------------------
+# Install Airflow & Providers
+# --------------------------------------------------
 RUN pip3 install --no-cache-dir \
     apache-airflow==2.10.0 \
     apache-airflow-providers-apache-spark \
-    apache-airflow-providers-postgres
+    apache-airflow-providers-postgres \
+    apache-airflow-providers-apache-kafka \
+    apache-airflow-providers-cncf-kubernetes \
+    psycopg2-binary \
+    pyspark==3.5.1 \
+    delta-spark==3.2.0
+
+# --------------------------------------------------
+# Permissions & Ownership
+# --------------------------------------------------
+RUN chown -R platform:platform ${AIRFLOW_HOME}
 
 USER platform
 
-WORKDIR /workspace
+WORKDIR ${AIRFLOW_HOME}

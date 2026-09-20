@@ -1,0 +1,140 @@
+###############################################################################
+# Apache Airflow Deployments
+#
+# Deployments included:
+#   1. Airflow Webserver (UI on Port 8080)
+#   2. Airflow Scheduler (DAG Execution Engine)
+###############################################################################
+
+# ─── 1. Airflow Webserver Deployment ──────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: webserver
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow
+      app.kubernetes.io/component: webserver
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow
+        app.kubernetes.io/component: webserver
+        app.kubernetes.io/part-of: ecommerce-data-platform
+    spec:
+      containers:
+        - name: webserver
+          image: ghcr.io/saranyarajagopal/ecommerce-platform-airflow:latest
+          imagePullPolicy: IfNotPresent
+          command: ["airflow", "webserver"]
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: dags-volume
+              mountPath: /opt/airflow/dags
+            - name: logs-volume
+              mountPath: /opt/airflow/logs
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+
+      volumes:
+        - name: dags-volume
+          persistentVolumeClaim:
+            claimName: airflow-dags-pvc
+        - name: logs-volume
+          persistentVolumeClaim:
+            claimName: airflow-logs-pvc
+
+---
+
+# ─── 2. Airflow Scheduler Deployment ──────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: scheduler
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow
+      app.kubernetes.io/component: scheduler
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow
+        app.kubernetes.io/component: scheduler
+        app.kubernetes.io/part-of: ecommerce-data-platform
+    spec:
+      containers:
+        - name: scheduler
+          image: ghcr.io/saranyarajagopal/ecommerce-platform-airflow:latest
+          imagePullPolicy: IfNotPresent
+          command: ["airflow", "scheduler"]
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: dags-volume
+              mountPath: /opt/airflow/dags
+            - name: logs-volume
+              mountPath: /opt/airflow/logs
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - "airflow jobs check --job-type SchedulerJob --hostname $(hostname)"
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+
+      volumes:
+        - name: dags-volume
+          persistentVolumeClaim:
+            claimName: airflow-dags-pvc
+        - name: logs-volume
+          persistentVolumeClaim:
+            claimName: airflow-logs-pvc
+

@@ -1,0 +1,27 @@
+###############################################################################
+# Airflow Services
+#
+# Exposes the Airflow Webserver UI on Port 8080 (ClusterIP & NodePort)
+###############################################################################
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-webserver
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: webserver
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: webserver
+

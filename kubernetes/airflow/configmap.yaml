@@ -1,0 +1,43 @@
+###############################################################################
+# Airflow ConfigMap & Environment Configuration
+#
+# Configures:
+#   - Database Connection (PostgreSQL)
+#   - Executor Type (LocalExecutor)
+#   - Feature Flags (Examples disabled, Catchup disabled)
+#   - Platform Connections (Kafka, Spark, MinIO)
+###############################################################################
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-config
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: ecommerce-data-platform
+data:
+  # ── Airflow Core Settings ──
+  AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@airflow-postgres.ecommerce-platform.svc.cluster.local:5432/airflow"
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+  AIRFLOW__CORE__CATCHUP_BY_DEFAULT: "false"
+
+  # ── Airflow Webserver Settings ──
+  AIRFLOW__WEBSERVER__SECRET_KEY: "ecommerce-platform-airflow-secret-key"
+  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+  AIRFLOW__WEBSERVER__AUTHENTICATE: "true"
+
+  # ── Airflow Paths ──
+  AIRFLOW_HOME: "/opt/airflow"
+  AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags"
+  AIRFLOW__CORE__LOGGING_FOLDER: "/opt/airflow/logs"
+  AIRFLOW__CORE__PLUGINS_FOLDER: "/opt/airflow/plugins"
+
+  # ── Platform Endpoints ──
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.ecommerce-platform.svc.cluster.local:9092"
+  SPARK_MASTER_URL: "k8s://https://kubernetes.default.svc"
+  MINIO_ENDPOINT: "http://minio.ecommerce-platform.svc.cluster.local:9000"
+

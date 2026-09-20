@@ -1,0 +1,77 @@
+###############################################################################
+# Airflow Database Initialization Job
+#
+# One-time Job that:
+#   1. Waits for PostgreSQL database to be reachable
+#   2. Runs `airflow db migrate` (or `db init`)
+#   3. Creates default Admin user (admin/admin)
+###############################################################################
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: airflow-init-db
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow
+    app.kubernetes.io/component: init-db
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow
+        app.kubernetes.io/component: init-db
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: airflow-init
+          image: ghcr.io/saranyarajagopal/ecommerce-platform-airflow:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              echo "=== Waiting for PostgreSQL database ==="
+              until nc -z -v -w5 airflow-postgres 5432; do
+                echo "  Postgres not ready yet, retrying in 5s..."
+                sleep 5
+              done
+              echo "=== PostgreSQL is reachable ==="
+
+              echo ""
+              echo "=== Running Airflow DB Migration ==="
+              airflow db migrate
+
+              echo ""
+              echo "=== Creating Admin User ==="
+              airflow users create \
+                --username admin \
+                --firstname Admin \
+                --lastname User \
+                --role Admin \
+                --email admin@ecommerce-platform.local \
+                --password admin || echo "Admin user already exists."
+
+              echo ""
+              echo "=== Airflow DB Initialization Complete ==="
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+          volumeMounts:
+            - name: dags-volume
+              mountPath: /opt/airflow/dags
+            - name: logs-volume
+              mountPath: /opt/airflow/logs
+
+      volumes:
+        - name: dags-volume
+          persistentVolumeClaim:
+            claimName: airflow-dags-pvc
+        - name: logs-volume
+          persistentVolumeClaim:
+            claimName: airflow-logs-pvc
+

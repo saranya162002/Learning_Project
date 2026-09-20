@@ -1,0 +1,114 @@
+###############################################################################
+# PostgreSQL Metadata Database for Apache Airflow
+#
+# Contains:
+#   1. PostgreSQL PersistentVolumeClaim (5Gi)
+#   2. PostgreSQL Service (Port 5432)
+#   3. PostgreSQL Deployment
+###############################################################################
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: airflow-postgres-pvc
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-postgres
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app.kubernetes.io/name: airflow-postgres
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-postgres
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: airflow-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow-postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: ecommerce-data-platform
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: "airflow"
+            - name: POSTGRES_PASSWORD
+              value: "airflow"
+            - name: POSTGRES_DB
+              value: "airflow"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - airflow
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - airflow
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: airflow-postgres-pvc
+
