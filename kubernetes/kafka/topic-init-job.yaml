@@ -47,7 +47,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: topic-creator
-          image: apache/kafka:3.7.0
+          image: ecommerce-platform-airflow-base:latest
           command:
             - /bin/bash
             - -c

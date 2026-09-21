@@ -20,7 +20,7 @@ spec:
   type: Python
   pythonVersion: "3"
   mode: cluster
-  image: ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
+  image: ecommerce-platform-spark-base:latest
   imagePullPolicy: IfNotPresent
   mainApplicationFile: local:///workspace/pipeline/metadata/bronze.py
   sparkVersion: "3.5.1"

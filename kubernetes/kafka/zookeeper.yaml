@@ -87,22 +87,22 @@ spec:
               mountPath: /data
             - name: zookeeper-datalog
               mountPath: /datalog
-          readinessProbe:
-            exec:
-              command:
-                - /bin/bash
-                - -c
-                - "echo ruok | nc localhost 2181 | grep imok"
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          livenessProbe:
-            exec:
-              command:
-                - /bin/bash
-                - -c
-                - "echo ruok | nc localhost 2181 | grep imok"
-            initialDelaySeconds: 20
-            periodSeconds: 15
+          # readinessProbe:
+          #   exec:
+          #     command:
+          #       - /bin/bash
+          #       - -c
+          #       - "echo ruok | nc localhost 2181 | grep imok"
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 10
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - /bin/bash
+          #       - -c
+          #       - "echo ruok | nc localhost 2181 | grep imok"
+          #   initialDelaySeconds: 20
+          #   periodSeconds: 15
 
   volumeClaimTemplates:
     - metadata:

@@ -25,7 +25,7 @@ data:
 
     # ─── Kubernetes Driver & Executor Settings ───────────────────────
     spark.master                           k8s://https://kubernetes.default.svc
-    spark.kubernetes.container.image       ghcr.io/saranyarajagopal/ecommerce-platform-spark:latest
+    spark.kubernetes.container.image       ecommerce-platform-spark-base:latest
     spark.kubernetes.container.image.pullPolicy IfNotPresent
     spark.kubernetes.namespace             ecommerce-platform
     spark.kubernetes.authenticate.driver.serviceAccountName spark

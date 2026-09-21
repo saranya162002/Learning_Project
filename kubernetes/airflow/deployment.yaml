@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: webserver
-          image: ghcr.io/saranyarajagopal/ecommerce-platform-airflow:latest
+          image: ecommerce-platform-airflow-base:latest
           imagePullPolicy: IfNotPresent
           command: ["airflow", "webserver"]
           ports:
@@ -102,7 +102,7 @@ spec:
     spec:
       containers:
         - name: scheduler
-          image: ghcr.io/saranyarajagopal/ecommerce-platform-airflow:latest
+          image: ecommerce-platform-airflow-base:latest
           imagePullPolicy: IfNotPresent
           command: ["airflow", "scheduler"]
           envFrom:

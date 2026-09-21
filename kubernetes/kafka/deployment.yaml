@@ -6,7 +6,7 @@
 #   - Storage: 5Gi PVC per broker
 #   - Coordination: ZooKeeper (zookeeper.ecommerce-platform.svc.cluster.local:2181)
 #
-# Image: apache/kafka:3.7.0 (official Apache Kafka image)
+# Image: saranya1602/ecommerce-platform-airflow-base:latest (official Apache Kafka image)
 ###############################################################################
 apiVersion: apps/v1
 kind: StatefulSet
@@ -37,7 +37,7 @@ spec:
       # ── Init Container: generate per-broker server.properties ──
       initContainers:
         - name: kafka-init
-          image: apache/kafka:3.7.0
+          image: saranya1602/ecommerce-platform-airflow-base:latest
           command: ["/bin/bash", "/etc/kafka/config/init-kafka.sh"]
           volumeMounts:
             - name: kafka-data
@@ -50,7 +50,7 @@ spec:
       # ── Main Kafka Broker Container ──
       containers:
         - name: kafka
-          image: apache/kafka:3.7.0
+          image: saranya1602/ecommerce-platform-airflow-base:latest
           command: ["kafka-server-start.sh", "/tmp/server.properties"]
           ports:
             - name: client

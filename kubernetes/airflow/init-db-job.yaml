@@ -28,7 +28,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: airflow-init
-          image: ghcr.io/saranyarajagopal/ecommerce-platform-airflow:latest
+          image: ecommerce-platform-airflow-base:latest
           command:
             - /bin/bash
             - -c
