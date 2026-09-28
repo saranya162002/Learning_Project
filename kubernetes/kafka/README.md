@@ -61,6 +61,7 @@ kubernetes/kafka/
 ├── deployment.yaml        # 2-broker Kafka StatefulSet (5Gi PVC each)
 ├── service.yaml           # Headless + ClusterIP services
 ├── topic-init-job.yaml    # Job to create all 11 topics (even partition counts)
+├── kafka-ui.yaml          # Kafka UI Deployment & Service
 └── README.md              # This file
 ```
 
@@ -92,7 +93,13 @@ kubectl wait --for=condition=Ready pod zookeeper-0 -n ecommerce-platform --timeo
 kubectl apply -f kubernetes/kafka/configmap.yaml
 ```
 
-### Step 4 — Deploy the 2-Broker Kafka StatefulSet
+### Step 4 — Create Services
+
+```bash
+kubectl apply -f kubernetes/kafka/service.yaml
+```
+
+### Step 5 — Deploy the 2-Broker Kafka StatefulSet
 
 ```bash
 kubectl apply -f kubernetes/kafka/deployment.yaml
@@ -110,12 +117,6 @@ Expected output:
 NAME      READY   STATUS    RESTARTS   AGE
 kafka-0   1/1     Running   0          45s
 kafka-1   1/1     Running   0          40s
-```
-
-### Step 5 — Create Services
-
-```bash
-kubectl apply -f kubernetes/kafka/service.yaml
 ```
 
 ### Step 6 — Create Topics (Even Partition Counts)
@@ -137,6 +138,26 @@ kubectl exec -it kafka-0 -n ecommerce-platform -- \
   kafka-topics.sh --bootstrap-server localhost:9092 --list
 ```
 
+### Step 7 — Deploy Kafka UI & Access Web Dashboard
+
+```bash
+kubectl apply -f kubernetes/kafka/kafka-ui.yaml
+```
+
+Wait for Kafka UI to start:
+
+```bash
+kubectl wait --for=condition=Available deployment/kafka-ui -n ecommerce-platform --timeout=60s
+```
+
+Access the Web UI by forwarding port 8080:
+
+```bash
+kubectl port-forward svc/kafka-ui 8080:8080 -n ecommerce-platform
+```
+
+Open your browser at `http://localhost:8080` to view topics, partitions, consumer groups, and create/produce messages.
+
 ---
 
 ## One-Command Deploy (All at Once)
@@ -149,16 +170,19 @@ kubectl apply -f kubernetes/kafka/zookeeper.yaml
 # 2. Wait for ZooKeeper
 kubectl wait --for=condition=Ready pod zookeeper-0 -n ecommerce-platform --timeout=90s
 
-# 3. Apply Kafka Config, StatefulSet & Services
+# 3. Apply Kafka Config & Services
 kubectl apply -f kubernetes/kafka/configmap.yaml
-kubectl apply -f kubernetes/kafka/deployment.yaml
 kubectl apply -f kubernetes/kafka/service.yaml
 
-# 4. Wait for Kafka Brokers
+# 4. Apply Kafka StatefulSet & Kafka UI
+kubectl apply -f kubernetes/kafka/deployment.yaml
+kubectl apply -f kubernetes/kafka/kafka-ui.yaml
+
+# 5. Wait for Kafka Brokers
 kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=kafka \
   -n ecommerce-platform --timeout=120s
 
-# 5. Execute Topic Init Job
+# 6. Execute Topic Init Job
 kubectl apply -f kubernetes/kafka/topic-init-job.yaml
 ```
 

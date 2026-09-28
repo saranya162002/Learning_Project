@@ -60,15 +60,13 @@ data:
     #!/bin/bash
     set -e
 
-    # Extract ordinal index from hostname (kafka-0 → 0, kafka-1 → 1)
     ORDINAL=${HOSTNAME##*-}
 
-    # Copy template and inject per-broker values
     cp /etc/kafka/config/server.properties /tmp/server.properties
 
     echo "" >> /tmp/server.properties
     echo "broker.id=${ORDINAL}" >> /tmp/server.properties
     echo "advertised.listeners=PLAINTEXT://${HOSTNAME}.kafka-headless.ecommerce-platform.svc.cluster.local:9092" >> /tmp/server.properties
 
-    # Start Kafka
-    exec kafka-server-start.sh /tmp/server.properties
+    echo "Generated configuration for broker ${ORDINAL}"
+    cat /tmp/server.properties

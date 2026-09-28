@@ -1,0 +1,85 @@
+###############################################################################
+# Kafka UI Deployment & Service
+#
+# Provides a web-based user interface to monitor Kafka clusters, topics,
+# consumer groups, schema registries, and message browsing/creation.
+# Image: provectuslabs/kafka-ui
+###############################################################################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka-ui
+    app.kubernetes.io/component: ui
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka-ui
+        app.kubernetes.io/component: ui
+        app.kubernetes.io/part-of: ecommerce-data-platform
+    spec:
+      containers:
+        - name: kafka-ui
+          image: provectuslabs/kafka-ui:v0.7.2
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: ecommerce-kafka-cluster
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: kafka.ecommerce-platform.svc.cluster.local:9092
+            # - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+            #   value: "zookeeper.ecommerce-platform.svc.cluster.local:2181"
+            - name: DYNAMIC_CONFIG_ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: ecommerce-platform
+  labels:
+    app.kubernetes.io/name: kafka-ui
+    app.kubernetes.io/component: ui
+    app.kubernetes.io/part-of: ecommerce-data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: kafka-ui
+
