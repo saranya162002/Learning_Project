@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: airflow-init
+  namespace: ecommerce-platform
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: airflow-init
+          image: saranya1602/ecommerce-platform-airflow-base:latest
+          command:
+            - airflow
+            - db
+            - migrate
+          envFrom:
+            - secretRef:
+                name: airflow-secret

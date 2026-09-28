@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: airflow-create-user
+  namespace: ecommerce-platform
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: airflow-user
+          image: saranya1602/ecommerce-platform-airflow-base:latest
+          command:
+            - airflow
+            - users
+            - create
+            - --username
+            - admin
+            - --password
+            - admin
+            - --firstname
+            - Admin
+            - --lastname
+            - User
+            - --role
+            - Admin
+            - --email
+            - admin@example.com
+          envFrom:
+            - secretRef:
+                name: airflow-secret

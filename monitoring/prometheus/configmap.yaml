@@ -101,3 +101,18 @@ data:
           - source_labels: [__meta_kubernetes_service_name]
             target_label: service_name
 
+      - job_name: kafka
+        static_configs:
+          - targets:
+              - kafka-0.kafka-headless.ecommerce-platform.svc.cluster.local:9092
+              - kafka-1.kafka-headless.ecommerce-platform.svc.cluster.local:9092
+
+      - job_name: airflow
+        static_configs:
+          - targets:
+              - airflow-webserver.ecommerce-platform.svc.cluster.local:8080
+
+      - job_name: spark-operator
+        static_configs:
+          - targets:
+              - spark-operator.ecommerce-platform.svc.cluster.local:10254

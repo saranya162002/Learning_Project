@@ -138,3 +138,27 @@ spec:
           persistentVolumeClaim:
             claimName: airflow-logs-pvc
 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-triggerer
+  namespace: ecommerce-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: airflow
+      app.kubernetes.io/component: triggerer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: airflow
+        app.kubernetes.io/component: triggerer
+    spec:
+      containers:
+        - name: triggerer
+          image: ecommerce-platform-airflow-base:latest
+          command:
+            - airflow
+            - triggerer

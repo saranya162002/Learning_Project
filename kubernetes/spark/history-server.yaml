@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-history-server
+  namespace: ecommerce-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-history-server
+  template:
+    metadata:
+      labels:
+        app: spark-history-server
+    spec:
+      containers:
+        - name: history-server
+          image: saranya1602/ecommerce-platform-spark-base:latest
+          command:
+            - /opt/spark/sbin/start-history-server.sh

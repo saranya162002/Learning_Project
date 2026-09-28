@@ -22,21 +22,22 @@ data:
     # ─── Delta Lake Extensions & Catalog ──────────────────────────────
     spark.sql.extensions                   io.delta.sql.DeltaSparkSessionExtension
     spark.sql.catalog.spark_catalog        org.apache.spark.sql.delta.catalog.DeltaCatalog
+    spark.eventLog.enabled                 false
 
     # ─── Kubernetes Driver & Executor Settings ───────────────────────
     spark.master                           k8s://https://kubernetes.default.svc
-    spark.kubernetes.container.image       ecommerce-platform-spark-base:latest
+    spark.kubernetes.container.image       saranya1602/ecommerce-platform-spark-base:latest
     spark.kubernetes.container.image.pullPolicy IfNotPresent
     spark.kubernetes.namespace             ecommerce-platform
     spark.kubernetes.authenticate.driver.serviceAccountName spark
 
     # ─── Data Platform Endpoints ─────────────────────────────────────
-    spark.kafka.bootstrap.servers          kafka.ecommerce-platform.svc.cluster.local:9092
-    spark.hadoop.fs.s3a.endpoint           http://minio.ecommerce-platform.svc.cluster.local:9000
-    spark.hadoop.fs.s3a.access.key         minioadmin
-    spark.hadoop.fs.s3a.secret.key         minioadmin
-    spark.hadoop.fs.s3a.path.style.access  true
-    spark.hadoop.fs.s3a.impl               org.apache.hadoop.fs.s3a.S3AFileSystem
+    # spark.kafka.bootstrap.servers          kafka.ecommerce-platform.svc.cluster.local:9092
+    # spark.hadoop.fs.s3a.endpoint           http://minio.ecommerce-platform.svc.cluster.local:9000
+    # spark.hadoop.fs.s3a.access.key         minioadmin
+    # spark.hadoop.fs.s3a.secret.key         minioadmin
+    # spark.hadoop.fs.s3a.path.style.access  true
+    # spark.hadoop.fs.s3a.impl               org.apache.hadoop.fs.s3a.S3AFileSystem
 
     # ─── Performance & Shuffle Settings ──────────────────────────────
     spark.sql.shuffle.partitions           4
