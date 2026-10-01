@@ -87,10 +87,10 @@ spec:
               mountPath: /var/lib/grafana
             - name: datasources-volume
               mountPath: /etc/grafana/provisioning/datasources
-            - name: dashboards-provider-volume
-              mountPath: /etc/grafana/provisioning/dashboards
-            - name: dashboards-volume
-              mountPath: /var/lib/grafana/dashboards
+            # - name: dashboards-provider-volume
+            #   mountPath: /etc/grafana/provisioning/dashboards
+            # - name: dashboards-volume
+            #   mountPath: /var/lib/grafana/dashboards
           readinessProbe:
             httpGet:
               path: /api/health
@@ -111,10 +111,10 @@ spec:
         - name: datasources-volume
           configMap:
             name: grafana-datasources
-        - name: dashboards-provider-volume
-          configMap:
-            name: grafana-dashboards-provider
-        - name: dashboards-volume
-          configMap:
-            name: grafana-dashboards-json
+        # - name: dashboards-provider-volume
+        #   configMap:
+        #     name: grafana-dashboards-provider
+        # - name: dashboards-volume
+        #   configMap:
+        #     name: grafana-dashboards-json
 
